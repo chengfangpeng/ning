@@ -1,5 +1,6 @@
 package com.ning.common
 
+import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
@@ -8,6 +9,7 @@ import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuScope
 import androidx.compose.ui.window.Tray
 import com.ning.common.common.LocalAppResources
+import com.ning.common.ui.common.AppTheme
 import kotlinx.coroutines.launch
 import com.ning.common.window.NotepadWindow
 
@@ -20,6 +22,7 @@ fun ApplicationScope.NotepadApplication(state: NotepadApplicationState) {
     for (window in state.windows) {
         key(window) {
             NotepadWindow(window)
+
         }
     }
 }
