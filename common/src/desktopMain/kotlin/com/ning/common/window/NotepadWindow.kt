@@ -6,7 +6,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.icons.Icons
@@ -21,17 +24,19 @@ import androidx.compose.ui.window.*
 import com.mikepenz.markdown.Markdown
 import com.ning.common.common.LocalAppResources
 import com.ning.common.platform.HomeFolder
+import com.ning.common.platform.VerticalScrollbar
 import com.ning.common.ui.CodeViewer
 import com.ning.common.ui.common.Settings
 import com.ning.common.ui.editor.Editors
 import com.ning.common.ui.filetree.FileTree
 import com.ning.common.ui.filetree.FileTreeView
 import com.ning.common.ui.filetree.FileTreeViewTabView
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import com.ning.common.util.FileDialog
 import com.ning.common.util.SplitterState
+import com.ning.common.util.VerticalSplittable
 import com.ning.common.util.YesNoCancelDialog
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 @Composable
 fun NotepadWindow(state: NotepadWindowState) {
@@ -71,46 +76,89 @@ fun NotepadWindow(state: NotepadWindowState) {
             )
         }
 
-        ResizablePanel(Modifier.width(animatedSize).fillMaxHeight(), panelState) {
-            Column {
-                FileTreeViewTabView()
-                FileTreeView(codeViewer.fileTree)
+        VerticalSplittable(
+            Modifier.fillMaxSize(),
+            panelState.splitter,
+            onResize = {
+                panelState.expandedSize =
+                    (panelState.expandedSize + it).coerceAtLeast(panelState.expandedSizeMin)
             }
-        }
-        Row {
-            BasicTextField(
-                state.text,
-                state::text::set,
-                enabled = state.isInit,
-//                modifier = Modifier.fillMaxSize()
-            )
-            Markdown(state.text)
-        }
+        ) {
 
-        if (state.openDialog.isAwaiting) {
-            FileDialog(
-                title = "Notepad",
-                isLoad = true,
-                onResult = {
-                    state.openDialog.onResult(it)
+            ResizablePanel(Modifier.width(animatedSize).fillMaxHeight(), panelState) {
+                Column {
+                    FileTreeViewTabView()
+                    FileTreeView(codeViewer.fileTree)
                 }
-            )
-        }
+            }
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(Modifier.weight(1f)) {
 
-        if (state.saveDialog.isAwaiting) {
-            FileDialog(
-                title = "Notepad",
-                isLoad = false,
-                onResult = { state.saveDialog.onResult(it) }
-            )
-        }
+                    val scrollState = rememberLazyListState()
 
-        if (state.exitDialog.isAwaiting) {
-            YesNoCancelDialog(
-                title = "Notepad",
-                message = "Save changes?",
-                onResult = { state.exitDialog.onResult(it) }
-            )
+                    LazyColumn(modifier = Modifier.fillMaxSize(), state = scrollState) {
+                        item {
+                            BasicTextField(
+                                state.text,
+                                state::text::set,
+                                enabled = state.isInit,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+
+                    }
+                    VerticalScrollbar(
+                        Modifier.align(Alignment.CenterEnd),
+                        scrollState
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    SelectionContainer() {
+                        Box(modifier = Modifier.fillMaxSize()) {
+
+                            val scrollState = rememberLazyListState()
+
+                            LazyColumn(modifier = Modifier.fillMaxSize(), state = scrollState) {
+                                item {
+                                    Markdown(state.text, modifier = Modifier.fillMaxSize())
+                                }
+
+                            }
+                            VerticalScrollbar(
+                                Modifier.align(Alignment.CenterEnd),
+                                scrollState
+                            )
+                        }
+
+                    }
+                }
+            }
+
+            if (state.openDialog.isAwaiting) {
+                FileDialog(
+                    title = "Notepad",
+                    isLoad = true,
+                    onResult = {
+                        state.openDialog.onResult(it)
+                    }
+                )
+            }
+
+            if (state.saveDialog.isAwaiting) {
+                FileDialog(
+                    title = "Notepad",
+                    isLoad = false,
+                    onResult = { state.saveDialog.onResult(it) }
+                )
+            }
+
+            if (state.exitDialog.isAwaiting) {
+                YesNoCancelDialog(
+                    title = "Notepad",
+                    message = "Save changes?",
+                    onResult = { state.exitDialog.onResult(it) }
+                )
+            }
         }
     }
 }
